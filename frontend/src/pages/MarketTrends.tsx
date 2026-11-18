@@ -239,15 +239,14 @@ const MarketTrends = () => {
                     {/* Selector Header - Moved Above Chart */}
 
                     {indicesArray.length > 0 ? (() => {
-                        const selectedData = indicesArray.find(i => i.name === selectedIndex)?.data || indicesArray[0].data;
                         const keys = indicesArray.map(i => i.name);
-
-                        // Ensure selectedIndex is valid
-                        if (!keys.includes(selectedIndex) && keys.length > 0) setSelectedIndex(keys[0]);
+                        const activeKey = keys.includes(selectedIndex) ? selectedIndex : (keys[0] || "");
+                        const selectedData = indicesArray.find(i => i.name === activeKey)?.data || indicesArray[0]?.data;
+                        if (!selectedData) return null;
 
                         return (
                             <motion.div
-                                key={selectedIndex}
+                                key={activeKey}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className="bg-card rounded-3xl p-8 shadow-sm border border-border flex-1 flex flex-col"
@@ -258,7 +257,7 @@ const MarketTrends = () => {
                                             <Globe className="w-5 h-5 text-muted-foreground" />
                                             <div className="relative">
                                                 <select
-                                                    value={selectedIndex}
+                                                    value={activeKey}
                                                     onChange={(e) => setSelectedIndex(e.target.value)}
                                                     className="w-full bg-background border-none text-foreground text-xl font-bold rounded-lg py-2 pl-3 pr-10 appearance-none cursor-pointer hover:bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                                                 >
@@ -273,7 +272,7 @@ const MarketTrends = () => {
                                     </div>
 
                                     <div className={`text-right ${selectedData.percent_change >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                                        <div className="text-4xl font-bold tracking-tight">{selectedData.current_price.toLocaleString()}</div>
+                                        <div className="text-4xl font-bold tracking-tight">{selectedData.current_price != null ? selectedData.current_price.toLocaleString() : 'N/A'}</div>
                                         <div className={`text-sm font-bold px-3 py-1 rounded-full inline-block mt-1 ${selectedData.percent_change >= 0 ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                                             {selectedData.percent_change > 0 ? '+' : ''}{selectedData.percent_change}%
                                         </div>
@@ -343,7 +342,7 @@ const MarketTrends = () => {
                                     <div className="bg-secondary/30 p-4 rounded-2xl border border-secondary">
                                         <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">50-Day SMA</p>
                                         <p className="font-bold text-foreground">
-                                            {selectedData.technical?.sma50?.toLocaleString() || 'N/A'}
+                                            {selectedData.technical?.sma50 != null ? selectedData.technical.sma50.toLocaleString() : 'N/A'}
                                         </p>
                                     </div>
                                     <div className="bg-secondary/30 p-4 rounded-2xl border border-secondary">
@@ -351,11 +350,11 @@ const MarketTrends = () => {
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-500 ${selectedData.technical?.health_score >= 8 ? 'bg-green-500' : selectedData.technical?.health_score >= 5 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                                    className={`h-full rounded-full transition-all duration-500 ${(selectedData.technical?.health_score ?? 0) >= 8 ? 'bg-green-500' : (selectedData.technical?.health_score ?? 0) >= 5 ? 'bg-yellow-500' : 'bg-red-500'}`}
                                                     style={{ width: `${(selectedData.technical?.health_score || 0) * 10}%` }}
                                                 />
                                             </div>
-                                            <span className="font-bold text-sm">{selectedData.technical?.health_score}/10</span>
+                                            <span className="font-bold text-sm">{selectedData.technical?.health_score ?? 0}/10</span>
                                         </div>
                                     </div>
                                     <div className="bg-secondary/30 p-4 rounded-2xl border border-secondary">
@@ -464,10 +463,10 @@ const MarketTrends = () => {
                                         </span>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
-                                        <div className={`font-extrabold text-2xl ${sector.change >= 0 ? 'text-green-500' : 'text-red-500'
+                                        <div className={`font-extrabold text-2xl ${(sector.change ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'
                                             } flex items-center gap-1.5`}>
-                                            {sector.change >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                                            {sector.change > 0 ? '+' : ''}{(sector.change ?? 0).toFixed(2)}%
+                                            {(sector.change ?? 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                                            {(sector.change ?? 0) > 0 ? '+' : ''}{(sector.change ?? 0).toFixed(2)}%
                                         </div>
                                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sector.change >= 0 ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'
                                             }`}>
@@ -520,14 +519,16 @@ const MarketTrends = () => {
                                         </span>
                                         <div className="flex items-center gap-1.5 mt-1">
                                             <span className="text-xs font-bold text-muted-foreground">₹</span>
-                                            <span className="text-sm font-bold text-foreground">{sector.current_price.toLocaleString()}</span>
+                                            <span className="text-sm font-bold text-foreground">
+                                                {sector.current_price != null ? sector.current_price.toLocaleString() : 'N/A'}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
-                                        <div className={`font-extrabold text-2xl ${sector.change >= 0 ? 'text-green-500' : 'text-red-500'
+                                        <div className={`font-extrabold text-2xl ${(sector.change ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'
                                             } flex items-center gap-1.5`}>
-                                            {sector.change >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                                            {sector.change > 0 ? '+' : ''}{(sector.change ?? 0).toFixed(2)}%
+                                            {(sector.change ?? 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                                            {(sector.change ?? 0) > 0 ? '+' : ''}{(sector.change ?? 0).toFixed(2)}%
                                         </div>
                                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sector.change >= 0 ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'
                                             }`}>
