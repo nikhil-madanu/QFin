@@ -11,7 +11,7 @@ class RateLimiter:
     Limits requests per IP address.
     """
     
-    def __init__(self, requests_per_minute: int = 30):  # Increased from 10 to 30
+    def __init__(self, requests_per_minute: int = 600):
         """
         Initialize rate limiter with sliding window.
         
@@ -20,7 +20,7 @@ class RateLimiter:
         """
         self.requests_per_minute = requests_per_minute
         self.window_size = 60  # 60 seconds
-        self.requests: Dict[str, List[float]] = defaultdict(list)  # Fixed: use 'requests' not 'request_log'
+        self.requests: Dict[str, List[float]] = defaultdict(list)
         self.lock = threading.Lock()
     
     def is_allowed(self, client_ip: str) -> Tuple[bool, int]:
@@ -67,7 +67,7 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-rate_limiter = RateLimiter(requests_per_minute=30)
+rate_limiter = RateLimiter(requests_per_minute=600)
 
 
 async def rate_limit_middleware(request: Request, call_next):
@@ -78,8 +78,12 @@ async def rate_limit_middleware(request: Request, call_next):
     # Get client IP
     client_ip = request.client.host if request.client else "unknown"
     
-    # Skip rate limiting for health check endpoint and OPTIONS requests (CORS preflight)
-    if request.url.path == "/" or request.url.path == "/health" or request.method == "OPTIONS":
+    # Skip rate limiting for localhost/loopback in dev, health check, and OPTIONS (CORS preflight)
+    if (
+        client_ip in ("127.0.0.1", "::1", "localhost", "testclient")
+        or request.url.path in ("/", "/health")
+        or request.method == "OPTIONS"
+    ):
         return await call_next(request)
     
     # Check rate limit

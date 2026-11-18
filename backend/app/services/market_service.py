@@ -355,16 +355,28 @@ class MarketService:
                 data = yf.download(ticker, period="1mo", interval="1d", progress=False, auto_adjust=True)
                 
                 # Step 2: Safety Check for empty data
-                if data.empty or len(data) < 2:
+                if data.empty:
                     continue
 
-                prices = data['Close']
+                if 'Close' not in data.columns and not isinstance(data.columns, pd.MultiIndex):
+                    continue
+
+                prices = data['Close'].dropna()
+                if len(prices) < 2:
+                    continue
                 
                 # Step 3: Safe Extraction (handles Series vs Single Value warnings)
-                curr = float(prices.iloc[-1].item()) if hasattr(prices.iloc[-1], 'item') else float(prices.iloc[-1])
-                prev = float(prices.iloc[-2].item()) if hasattr(prices.iloc[-2], 'item') else float(prices.iloc[-2])
+                curr_val = prices.iloc[-1]
+                prev_val = prices.iloc[-2]
+                curr = float(curr_val.item()) if hasattr(curr_val, 'item') else float(curr_val)
+                prev = float(prev_val.item()) if hasattr(prev_val, 'item') else float(prev_val)
                 
+                if pd.isna(curr) or pd.isna(prev) or prev == 0:
+                    continue
+
                 change = round(((curr - prev) / prev) * 100, 2)
+                if pd.isna(change):
+                    continue
                 
                 # Step 4: Build the Unified Response Structure
                 results.append({
@@ -385,7 +397,7 @@ class MarketService:
                 continue
 
         # Sort results by performance (Top Gainers first) for a better UI experience
-        results = sorted(results, key=lambda x: x['change'], reverse=True)
+        results = sorted(results, key=lambda x: x['change'] if x['change'] is not None else -9999, reverse=True)
 
         self._set_cache(cache_key, results)
         return results

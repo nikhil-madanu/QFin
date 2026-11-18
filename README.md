@@ -56,7 +56,12 @@ A comprehensive AI-powered finance application featuring a React frontend and va
 3. Run the development server:
    ```bash
    npm run dev
+   
+   run backend
+   cd backend && ./venv/bin/uvicorn app.main:app --reload
    ```
+
+   
 
 ## Features
 
@@ -64,3 +69,4 @@ A comprehensive AI-powered finance application featuring a React frontend and va
 - **Market Trends**: Real-time market analysis.
 - **AI Recommendations**: Personalized financial advice.
 - **Portfolio**: Management and tracking of assets.
+

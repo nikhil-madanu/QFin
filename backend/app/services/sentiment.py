@@ -28,7 +28,8 @@ class SentimentAnalyzer:
         if not self.api_token:
             print("⚠️ WARNING: HF_API_KEY not found. Using VADER sentiment only.")
 
-        self.build_dataframe(self.tickers)
+        import threading
+        threading.Thread(target=self.build_dataframe, args=(self.tickers,), daemon=True).start()
 
     @staticmethod
     def _fetch_single_feed(ticker: str, timeout: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -70,7 +71,7 @@ class SentimentAnalyzer:
 
     def _query_hf_api(self, inputs: List[str]) -> List[List[Dict[str, Any]]]:
         """Send payloads to HF Inference API with wait-for-model logic."""
-        if not inputs: return []
+        if not inputs or not self.api_token: return []
 
         try:
             response = requests.post(
@@ -171,8 +172,9 @@ class SentimentAnalyzer:
             cache.set(cache_key, (pd.DataFrame(), pd.DataFrame()), ttl_seconds=3600)
             return
 
-        self._query_hf_api(["Just warming up the engine."])
-        time.sleep(15)
+        if self.api_token:
+            self._query_hf_api(["Just warming up the engine."])
+            time.sleep(15)
 
         # Batch Scoring (with VADER fallback)
         sentiment_df = self._score_texts(df["Title"].tolist())
